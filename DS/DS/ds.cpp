@@ -609,6 +609,9 @@ void TestSList1()
 	SLPushBack(&L, 4);
 	SLPushBack(&L, 5);
 	PrintfSList(L);
+	
+	//SLInsertAfter(L, 8);
+	//PrintfSList(L);
 
     //尾删
 	//SLPopBack(&L);
@@ -646,4 +649,553 @@ int main()
 	return 0;
 }
 
+#endif
+
+#if 0
+//5
+//带头结点双向循环链表
+//可以不用二级指针，因为头结点位置不会改变
+//所有的操作都是基于头结点之后去操作的
+#include<iostream>
+#include<assert.h>
+#include<malloc.h>
+
+typedef int DataType;
+
+typedef struct DListNode
+{
+	DataType data;
+	struct DListNode *next;
+	struct DListNode *prev;
+}DListNode;
+
+//申请节点空间
+DListNode *BuyDListNode(DataType data);
+//创建空链表，含头结点
+DListNode* CreatDList();
+//尾插/删
+void DListPushBack(DListNode* pHead, DataType data);
+void DListPopBack(DListNode* pHead);
+//头插/删
+void DListPushFront(DListNode* pHead, DataType data);
+void DListPopFront(DListNode*pHead);
+//在pos位置插入新节点(往pos位置前面插入)
+void DListInsert(DListNode* pos, DataType data);
+//删除pos位置节点
+void DListErase(DListNode* pos);
+//查找Data数据节点
+DListNode* DListFind(DListNode* pHead, DataType data);
+//销毁链表
+void DListDestroy(DListNode* pHead);
+
+
+//申请节点空间
+DListNode *BuyDListNode(DataType data)
+{
+	DListNode* newNode = (DListNode*)malloc(sizeof(DListNode));
+	if (NULL == newNode)
+	{
+		assert(0);
+		return NULL;
+	}
+	newNode->data = data;
+	newNode->next = NULL;
+	newNode->prev = NULL;
+	return newNode;
+}
+//申请头结点
+//带头结点的双向循环链表
+//空链表也有头结点，且自己指自己
+DListNode* CreatDList()
+{
+	DListNode* head = BuyDListNode(0);
+	head->next = head;
+	head->prev = head;
+	return head;
+}
+//尾插
+void DListPushBack(DListNode* pHead, DataType data)
+{
+	if (NULL == pHead)
+	{
+		return ;
+	}
+	//申请节点
+	DListNode* newNode = BuyDListNode(data);
+
+	//先连接再断开
+	newNode->prev = pHead->prev;//把pHead->prev(链表中的最后一个节点)给newNode->prev
+	newNode->next = pHead;
+	pHead->prev->next = newNode;
+	pHead->prev = newNode;
+}
+//尾删
+void DListPopBack(DListNode* pHead)
+{ 
+	assert(pHead);//assert是一个调试宏，在debug底下有效，release底下不存在
+	if (NULL == pHead)
+	{
+		assert(0);
+		return;
+	}
+	//检测是否为空链表
+	if (pHead->next == pHead)
+	{
+		return;
+	}
+	//先连接再删除
+	DListNode *pos = pHead->prev;
+
+	pHead->prev = pos->prev;
+	pos->prev->next = pHead;
+	free(pos);
+
+}
+//头插
+void DListPushFront(DListNode* pHead, DataType data)
+{
+	if (NULL == pHead)
+	{
+		return;
+	}
+	//调用pos位置的插入
+	DListInsert(pHead->next, data);
+}
+//头删
+void DListPopFront(DListNode* pHead)
+{
+	if (NULL == pHead)
+	{
+		return;
+	}
+	//调用pos位置的删除
+	DListErase(pHead->next);
+}
+//在pos位置插入新节点(往pos位置前面插入)
+void DListInsert(DListNode* pos, DataType data)
+{
+	DListNode* newNode = BuyDListNode(data);
+	//先连接再断开
+	newNode->prev = pos->prev;
+	newNode->next = pos;
+	newNode->prev->next = newNode;
+	pos->prev = newNode;
+}
+//删除pos位置节点
+void DListErase(DListNode* pos)
+{
+	if (NULL == pos)
+	{
+		return;
+	}
+	//先连接，再删除
+	pos->prev->next = pos->next;
+	pos->next->prev = pos->prev;
+	free(pos);
+}
+//查找Data数据节点
+DListNode* DListFind(DListNode* pHead, DataType data)
+{
+	//检测链表是否存在
+	if (NULL == pHead)
+	{
+		return NULL;
+	}
+	DListNode* cur = pHead->next;
+	while (cur != pHead)
+	{
+		if (cur->data== data)
+		{
+			return cur;
+		}
+		cur = cur->next;
+	}
+	return NULL;
+}
+//销毁链表
+//最后要改变头指针使其指向NULL，所以必须传递二级指针
+void DListDestroy(DListNode** pHead)
+{
+	DListNode* cur = NULL;
+	//保证链表存在
+	if (NULL == pHead)
+	{
+		return;
+	}
+	//删除有效节点
+	cur = (*pHead)->next;
+	while (cur != *pHead)
+	{
+		(*pHead)->next = cur->next;
+		free(cur);
+		cur = (*pHead)->next;
+	}
+	free(*pHead);
+	*pHead = NULL;
+}
+//打印双向循环链表
+void PrintfDList(DListNode* pHead)
+{
+	if (NULL == pHead)
+	{
+		return;
+	}
+	DListNode *cur = pHead->next;
+	printf("pHead-->");
+	while (cur != pHead)
+	{
+		printf("%d-->", cur->data);
+		cur = cur->next;
+	}
+	printf("pHead\n");
+}
+//测试函数
+void Test1()
+{
+	//申请头结点
+	DListNode* head = CreatDList();
+	//尾插
+	DListPushBack(head, 1);
+	DListPushBack(head, 2);
+	DListPushBack(head, 3);
+	DListPushBack(head, 4);
+	DListPushBack(head, 5);
+	PrintfDList(head);
+
+	//销毁链表
+	DListDestroy(&head);
+}
+//测试函数
+void Test()
+{
+	Test1();
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+#endif
+
+#if 0
+//6
+//栈结构实现
+//静态栈-->栈中存储元素个数受限
+//实际应用中很少用静态栈，因为元素受限
+//在笔试中需要用到栈而没有结构时，临时实现栈结构-->建议：实现静态的栈(容易实现)
+#include<iostream>
+#include<assert.h>
+#include<malloc.h>
+
+typedef int DataType;
+#define MAX_SIZE 100
+
+typedef struct Stack
+{
+	DataType* array;
+	int capacity;  //容量
+	int size;
+}Stack;
+
+//栈的初始化
+void StackInit(Stack* ps);
+//容量检测
+void CheckCapacity(Stack* ps);
+//入栈
+void StackPush(Stack* ps);
+//出栈
+void StackPop(Stack* ps);
+//获取栈顶元素
+DataType StackTop(Stack* ps);
+//获取栈中有效元素个数
+DataType StackSize(Stack* ps);
+//检测栈是否为空
+DataType StackEmpty(Stack* ps);
+//销毁
+void StackDestroy(Stack* ps);
+
+
+//栈的初始化
+void StackInit(Stack* ps)
+{
+	assert(ps);
+	ps->array = (DataType*)malloc(sizeof(DataType) * 10);
+	ps->capacity = 10;
+	ps->size = 0;
+}
+//检测容量
+void CheckCapacity(Stack* ps)
+{
+	//1.申请新空间
+	//2.拷贝元素
+	//3.释放旧空间
+	if (ps->size >= ps->capacity)
+	{
+		//申请新空间
+		int newCapacity = ps->capacity * 2;
+		DataType* temp = (DataType*)malloc(sizeof(DataType)*newCapacity);
+
+		if (temp)
+		{
+			//拷贝元素
+			//memcpy(temp,ps->array,sizeof(DataType)*ps->capacity);
+			for (int i = 0; i < ps->size; i++)
+			{
+				temp[i] = ps->array[i];
+			}
+			//释放旧空间
+			free(ps->array);
+
+			ps->array = temp;
+		}
+	}
+}
+//入栈
+void StackPush(Stack* ps,DataType data)
+{
+	assert(ps);
+	//检测容量是否够
+	CheckCapacity(ps);
+
+	//插入元素
+	ps->array[ps->size] = data;
+	ps->size++;
+}
+//出栈
+void StackPop(Stack* ps)
+{
+	if (StackEmpty(ps))
+	{
+		return;
+	}
+	ps->size--;
+}
+//获取栈顶元素
+DataType StackTop(Stack* ps)
+{
+	assert(ps);
+	return ps->array[ps->size-1];
+}
+//获取栈中有效元素个数
+DataType StackSize(Stack* ps)
+{
+	assert(ps);
+	return ps->size;
+}
+//检测栈是否为空
+DataType StackEmpty(Stack* ps)
+{
+	assert(ps);
+	return 0 == ps->size;
+}
+//销毁
+void StackDestroy(Stack* ps)
+{
+	assert(ps);
+	free(ps);
+	ps->capacity=0;
+	ps->size = 0;
+}
+
+
+
+//测试函数
+void Test1()
+{
+	Stack s;
+	//栈的初始化
+	StackInit(&s);
+	//入栈
+	StackPush(&s, 1);
+	StackPush(&s, 2);
+	StackPush(&s, 3);
+	StackPush(&s, 4);
+	StackPush(&s, 5);
+	printf("%d\n",StackTop(&s));
+	printf("%d\n",StackSize(&s));
+	StackPop(&s);
+	//销毁
+	StackDestroy(&s);
+}
+//测试函数
+void Test()
+{
+	Test1();
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+#endif
+
+
+#if 1
+//7
+//队列结构实现
+#include<iostream>
+#include<assert.h>
+#include<malloc.h>
+
+typedef int QDataType;
+
+//队列底层使用链表中的节点结构
+typedef struct QNode
+{
+	struct QNode* next;
+	QDataType val;
+}QNode;
+
+struct Queue
+{
+	QNode* head;
+	QNode* rear;
+	int size;
+};
+//申请节点
+QNode* BuyQNode(int val);
+//队列的初始化
+void QueueInit(Queue* q);
+//入队列
+void QueuePush(Queue* q);
+//出队列
+void QueuePop(Queue* q);
+//获取队列中有效元素个数
+QDataType QueueSize(Queue* q);
+//检测队列是否为空
+QDataType QueueEmpty(Queue* q);
+//获取队头元素
+QDataType QueueFront(Queue* q);
+//获取队尾元素
+QDataType QueueBack(Queue* q);
+//销毁队列
+void QueueDestroy(Queue* q);
+
+
+//申请节点
+QNode* BuyQNode(int val)
+{
+	QNode* newNode = (QNode*)malloc(sizeof(QNode));
+	if (NULL == newNode)
+	{
+		assert(0);
+		return NULL;
+	}
+	newNode->val = val;
+	newNode->next = NULL;
+	return newNode;
+}
+//队列的初始化
+//加个头结点
+void QueueInit(Queue* q)
+{
+	assert(q);
+	q->head = BuyQNode(0);
+	q->size = 0;
+	q->rear = q->head;
+}
+//入队列
+void QueuePush(Queue* q, QDataType val)
+{
+	assert(q);
+	QNode* newNode = BuyQNode(val);
+	q->rear->next = newNode;
+	q->rear = newNode;
+	q->size++;
+}
+//出队列
+void QueuePop(Queue* q)
+{
+	QNode* pDelNode = NULL;
+	if (QueueEmpty(q))
+	{
+		return;
+	}
+	pDelNode = q->head->next;
+	q->head->next = pDelNode->next;
+	free(pDelNode);
+	q->size--;
+}
+//获取队列中有效元素个数
+int QueueSize(Queue* q)
+{
+	assert(q);
+	return q->size;
+}
+//检测队列是否为空
+int QueueEmpty(Queue* q)
+{
+	assert(q);
+	return 0 == q->size;
+}
+//获取队头元素
+QDataType QueueFront(Queue* q)
+{
+	assert(!QueueEmpty(q));
+	return q->head->next->val;
+}
+//获取队尾元素
+QDataType QueueBack(Queue* q)
+{
+	assert(!QueueEmpty(q));
+	return q->rear->val;
+}
+//销毁队列
+void QueueDestroy(Queue* q)
+{
+	assert(q);
+	QNode* cur =q->head->next;
+	while(cur)
+	{
+		q->head->next=cur->next;
+		free(cur);
+		cur = q->head;
+	}
+	free(q);
+	q = NULL;
+}
+
+
+//测试函数
+void Test1()
+{
+	Queue q;
+	//初始化
+	QueueInit(&q);
+	//入队列
+	QueuePush(&q, 1);
+	QueuePush(&q, 2);
+	QueuePush(&q, 3);
+	QueuePush(&q, 4);
+	QueuePush(&q, 5);
+	
+	printf("size=%d\n", QueueSize(&q));
+	printf("Front=%d\n", QueueFront(&q));
+	printf("Back=%d\n", QueueBack(&q));
+	
+	
+	////出队列
+	//void QueuePop(Queue* q);
+	////获取队列中有效元素个数
+	//QDataType QueueSize(Queue* q);
+	////检测队列是否为空
+	//QDataType QueueEmpty(Queue* q);
+	////获取队头元素
+	//QDataType QueueFront(Queue* q);
+	////获取队尾元素
+	//QDataType QueueBack(Queue* q);
+}
+//测试函数
+void Test()
+{
+	Test1();
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
 #endif
