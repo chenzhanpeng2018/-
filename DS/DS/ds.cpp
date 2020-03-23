@@ -1032,7 +1032,7 @@ int main()
 #endif
 
 
-#if 1
+#if 0
 //7
 //队列结构实现
 #include<iostream>
@@ -1186,6 +1186,316 @@ void Test1()
 	//QDataType QueueFront(Queue* q);
 	////获取队尾元素
 	//QDataType QueueBack(Queue* q);
+}
+//测试函数
+void Test()
+{
+	Test1();
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+#endif
+
+
+#if 1
+//8
+//2020.3.23
+//堆的实现
+#include<iostream>
+#include<assert.h>
+#include<malloc.h>
+
+typedef int HPDataType;
+
+int Less(int left, int right);
+int Greater(int left, int right);
+//pCompare:是一个函数指针-->表示返回int 参数为两个整型参数的一系列函数
+//int (*pCompare(int left,int right));
+
+//pCompare:函数指针类型
+typedef int(*PCOM)(int left, int right);
+typedef struct Heap
+{
+	HPDataType* array;
+	int capacity;
+	int size;
+	PCOM Compare; //到时候让Compare指向Less或者Greater,只要函数两个参数都是整型，都可以用Compare接收。
+}Heap;
+
+//堆的创建
+void HeapCreate(Heap* hp, HPDataType* a, int size, PCOM compare);
+//堆的销毁
+void HeapDestory(Heap* hp);
+//堆的插入
+void HeapPush(Heap*  hp, HPDataType data);
+//堆的删除
+void HeapPop(Heap* hp);
+//取堆顶元素
+HPDataType HeapTop(Heap* hp);
+//堆的数据个数
+int HeapSize(Heap* hp);
+//堆的判空
+int HeapEmpty(Heap* hp);
+//堆的销毁
+void HeapDestroy(Heap* hp);
+//容量检测
+void CheckCapacity(Heap* hp);
+
+//对数组进行堆排序
+void HeapSort(int* a, int size);
+
+
+int Less(int left, int right)
+{
+	return left < right;
+}
+int Greater(int left, int right)
+{
+	return left > right;
+}
+//元素交换
+void Swap(HPDataType* left, HPDataType* right)
+{
+	*left ^= *right;
+	*right ^= *left;
+	*left ^= *right;
+}
+//向上调整
+void AdjustUP(Heap* hp,int child)
+{
+	//把新插入的孩子节点调整到合适的位置
+	int parent = (child - 1) >> 1;
+
+	while (child)
+	{
+		if (hp->Compare(hp->array[child] ,hp->array[parent]))
+		{
+			Swap(&hp->array[child], &hp->array[parent]);
+			//小的元素往上移动，可能会导致上层不满足堆的性质
+			//需要继续往上调整
+			child = parent;
+			parent = (child - 1) >> 1;
+		}
+		else
+		{
+			return;
+		}
+	}
+}
+//向下调整(只有堆顶元素不满足堆的结构)
+//假设：创建的是小堆
+//parent:需要调整的元素在堆结构中的下标(从0开始)
+//    将parent和孩子中的较小者进行比较
+//       是-->parent满足堆的特性
+//       否-->将parent和较小的孩子进行交换
+//                      交换之后底下的子数可能会不满足堆的性质，故需要继续向下调整
+void AdjustDown(Heap* hp, int parent)
+{
+	//child作用：标记parent的较小孩子
+	//默认标记左孩子。因为完全二叉树中一个节点可能有左没有右。
+	int child = parent * 2 + 1;
+
+	//while循环条件：保证左孩子存在，如果左孩子不存在，右孩子肯定也不存在
+	while (child<hp->size)
+	{
+		//先保证右孩子存在，再找两个孩子中较小的孩子，防止越界
+		//如果右孩子＜左孩子，child++
+		if (child+1<hp->size&&hp->Compare(hp->array[child + 1] ,hp->array[child]))
+		{
+			child++;
+		}
+
+		//检测parent是否比较小的孩子child小
+		if (hp->Compare(hp->array[child] ,hp->array[parent]))
+		{
+			Swap(&hp->array[child], &hp->array[parent]);
+
+			//parent大的元素往下移动，可能会导致子树不满足堆的性质
+			parent = child;
+			child = parent * 2 + 1;
+		}
+		else
+		{
+			//不用调整了
+			return;
+		}
+	}
+}
+void CheckCapacity(Heap* hp)
+{
+	assert(hp);
+	if (hp->size >= hp->capacity)
+	{
+		//需要扩容
+		//1.申请新空间
+		int newCapacity = hp->size * 2;
+		HPDataType* temp = (HPDataType*)malloc(sizeof(HPDataType)*newCapacity);
+		if (NULL == temp)
+		{
+			return;
+		}
+		//拷贝元素
+		for (int i = 0; i < hp->size;i++)
+		{
+			temp[i] = hp->array[i];
+		}
+		//memcpy(temp,hp->array,hp->size*sizeof(HPDataType));
+		
+		//3.释放旧空间
+		free(hp->array);
+		hp->array = temp;
+		hp->capacity = newCapacity;
+	}
+}
+//堆的创建
+void HeapCreate(Heap* hp, HPDataType* arr, int size, PCOM compare)
+{
+	assert(hp);
+	//1.先将arr中的元素放到堆的结构中
+	//初始化堆的结构
+   	hp->array = (HPDataType*)malloc(sizeof(HPDataType)*size);
+	if (NULL == hp->array)
+	{
+		assert(0);
+		return;
+	}
+	hp->capacity = size;
+	memcpy(hp->array, arr, sizeof(HPDataType)*size);
+	hp->size = size;
+	hp->Compare = compare;
+
+	//2.对堆中的元素进行调整
+	//从下往上，从第一个非叶子节点开始调整
+	for (int root = (size - 2) >> 1; root >= 0; root--)
+	{
+		AdjustDown(hp, root);
+	}
+}
+//堆的销毁
+void HeapDestory(Heap* hp)
+{
+
+}
+//堆的插入
+void HeapPush(Heap*  hp, HPDataType data)
+{
+	//1.把元素插入到最后
+	//2.向上调整一遍
+	assert(hp);
+	CheckCapacity(hp);
+	hp->array[hp->size++] = data;
+	AdjustUP(hp, hp->size - 1);
+
+}
+//堆的删除(删堆顶元素）
+void HeapPop(Heap* hp)
+{
+	//1.把堆顶元素和最后一个元素进行交换
+	//2.size-1
+	//3.从堆顶进行向下调整
+	assert(hp);
+	if (HeapEmpty(hp))
+	{
+		return;
+	}
+	Swap(&hp->array[0], &hp->array[hp->size - 1]);
+	hp->size--;
+	AdjustDown(hp, 0);
+}
+//取堆顶元素
+HPDataType HeapTop(Heap* hp)
+{
+	assert(hp&&!HeapEmpty(hp));
+	return hp->array[0];
+
+}
+//堆的数据个数
+int HeapSize(Heap* hp)
+{
+	assert(hp);
+	return hp->size;
+}
+//堆的判空
+int HeapEmpty(Heap* hp)
+{
+	assert(hp);
+	return 0 == hp->size;
+}
+///////////////////////////////////////////
+//对数组进行堆排序
+//降序建小堆，升序建大堆
+void HeapAdjust(int* array, int size,int parent)
+{
+	//小堆，降序，向下调整
+	int child = parent * 2 + 1;
+	while (child < size)
+	{
+		if (child + 1 < size&&array[child + 1] < array[child])
+		{
+			child++;
+		}
+		if (array[child] < array[parent])
+		{
+			int temp = array[child];
+			array[child] = array[parent];
+			array[parent] = temp;
+
+			parent = child;
+			child = parent * 2 + 1;
+		}
+		else
+		{
+			return;
+		}
+	}
+}
+void HeapSort(int* array, int size)
+{
+	//建堆
+	for (int root = (size - 2) >> 1; root >= 0; root--)
+	{
+		HeapAdjust(array, size, root);
+	}
+	//采用堆删除的思想来进行排序
+	int end = size - 1;
+	while (end)
+	{
+		int temp = array[0];
+		array[0] = array[end];
+		array[end] = temp;
+		
+		HeapAdjust(array, end, 0);
+		end--;
+	}
+}
+///////////////////////////////////////////
+//堆的销毁
+void HeapDestroy(Heap* hp)
+{
+	assert(hp);
+	if (hp->array)
+	{
+		free(hp->array);
+		hp->array = NULL;
+		hp->capacity = 0;
+		hp->size = 0;
+	}
+}
+
+
+//测试函数
+void Test1()
+{
+	int array[] = { 5, 3, 8, 4, 2, 7, 6, 1, 0 };
+	HeapSort(array, sizeof(array)/sizeof(array[0]));
+	Heap hp;
+	HeapCreate(&hp, array, sizeof(array) / sizeof(array[0]),Greater);
+	printf("size=%d\n", HeapSize(&hp));
+	printf("Top=%d\n", HeapTop(&hp));
 }
 //测试函数
 void Test()
