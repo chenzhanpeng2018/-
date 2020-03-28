@@ -1117,6 +1117,10 @@ void QueuePop(Queue* q)
 	q->head->next = pDelNode->next;
 	free(pDelNode);
 	q->size--;
+	if (0 == q->size)
+	{
+		q->rear = q->head;
+	}
 }
 //获取队列中有效元素个数
 int QueueSize(Queue* q)
@@ -1201,7 +1205,7 @@ int main()
 #endif
 
 
-#if 1
+#if 0
 //8
 //2020.3.23
 //堆的实现
@@ -1304,8 +1308,8 @@ void AdjustDown(Heap* hp, int parent)
 	{
 		//先保证右孩子存在，再找两个孩子中较小的孩子，防止越界
 		//如果右孩子＜左孩子，child++
-		if (child+1<hp->size&&hp->Compare(hp->array[child + 1] ,hp->array[child]))
-		{
+		if (child+1< hp->size&&hp->Compare(hp->array[child + 1] ,hp->array[child]))
+		{ 
 			child++;
 		}
 
@@ -1491,11 +1495,289 @@ void HeapDestroy(Heap* hp)
 void Test1()
 {
 	int array[] = { 5, 3, 8, 4, 2, 7, 6, 1, 0 };
-	HeapSort(array, sizeof(array)/sizeof(array[0]));
+	//HeapSort(array, sizeof(array)/sizeof(array[0]));
 	Heap hp;
 	HeapCreate(&hp, array, sizeof(array) / sizeof(array[0]),Greater);
 	printf("size=%d\n", HeapSize(&hp));
 	printf("Top=%d\n", HeapTop(&hp));
+}
+//测试函数
+void Test()
+{
+	Test1();
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+#endif
+
+#if 1
+//9
+//2020.3.28
+//二叉树的实现与基本操作
+#include<iostream>
+#include<assert.h>
+#include<malloc.h>
+using namespace std;
+
+typedef int BTDataType;
+
+typedef struct BinTreeNode
+{
+	BTDataType val;
+	struct BinTreeNode* pLeft;
+	struct BinTreeNode* pRight;
+}BTNode;
+
+BTNode* BuyBinTreeNode(BTDataType val)
+{
+	BTNode* pNewNode = (BTNode*)malloc(sizeof(BTNode));
+	if (NULL == pNewNode)
+	{
+		assert(0);
+		return NULL;
+	}
+	pNewNode->pLeft = NULL;
+	pNewNode->pRight = NULL;
+	pNewNode->val = val;
+	return pNewNode;
+}
+BTNode* CreatBinTree()
+{
+	//            1
+	//          /   \ 
+	//         2     4
+	//       /     /   \
+	//      3     5     6
+	BTNode* node1 = BuyBinTreeNode(1);
+	BTNode* node2 = BuyBinTreeNode(2);
+	BTNode* node3 = BuyBinTreeNode(3);
+	BTNode* node4 = BuyBinTreeNode(4);
+	BTNode* node5 = BuyBinTreeNode(5);
+	BTNode* node6 = BuyBinTreeNode(6);
+
+	BTNode* pRoot = node1;
+	node1->pLeft = node2;
+	node2->pLeft = node3;
+	node1->pRight = node4;
+	node4->pLeft = node5;
+	node4->pRight = node6;
+	return pRoot;
+
+}
+//前序遍历
+void PreOrder(BTNode* pRoot);
+//中序遍历
+void InOrder(BTNode* pRoot);
+//后序遍历
+void PostOrder(BTNode* pRoot);
+//获取二叉树中节点个数
+int GetNodeCount(BTNode* pRoot);
+//获取叶子节点个数
+int GetLeafCount();
+//获取第K层节点个数
+int GetKLevelCount();
+//获取二叉树高度
+int GetHeight();
+//返回X元素在树中所对应的节点
+BTNode* Find(BTNode* pRoot, BTDataType x);
+//获取pNode的双亲
+BTNode* FindParent(BTNode* pRoot, BTNode* pNode);
+
+//先序遍历
+void PreOrder(BTNode* pRoot)
+{
+	if (pRoot)
+	{
+		printf("%d ", pRoot->val);
+		PreOrder(pRoot->pLeft);
+		PreOrder(pRoot->pRight);
+	}
+}
+//中序遍历
+void InOrder(BTNode* pRoot)
+{
+	if (pRoot)
+	{
+		InOrder(pRoot->pLeft);
+		printf("%d ", pRoot->val);
+		InOrder(pRoot->pRight);
+	}
+}
+//后序遍历
+void PostOrder(BTNode* pRoot)
+{
+	if (pRoot)
+	{
+		PostOrder(pRoot->pLeft);
+		PostOrder(pRoot->pRight);
+		printf("%d ", pRoot->val);
+
+	}
+}
+//获取二叉树中节点个数
+//int NodeCount=0;
+//int GetNodeCount(BTNode* pRoot)
+//{   
+//	
+//	if (pRoot)
+//	{
+//		NodeCount++;
+//		GetNodeCount(pRoot->pLeft);
+//		GetNodeCount(pRoot->pRight);
+//	}
+//	return NodeCount;
+//}
+int GetNodeCount(BTNode* pRoot)
+{
+	if (NULL==pRoot)
+	{
+		return 0;
+	}
+	return 1+GetNodeCount(pRoot->pLeft)+
+		   GetNodeCount(pRoot->pRight);
+}
+//获取叶子节点个数
+int GetLeafCount(BTNode* pRoot)
+{
+	if (NULL == pRoot)
+	{
+		return 0;
+	}
+	if (NULL == pRoot->pLeft&&NULL == pRoot->pRight)
+	{
+		return 1;
+	}
+	return GetLeafCount(pRoot->pLeft)+GetLeafCount(pRoot->pRight);
+}
+//获取第K层节点个数
+int GetKLevelCount(BTNode* pRoot,int k)
+{
+	if (NULL == pRoot || k < 1)
+	{
+		return 0;
+	}
+	if (1 == k)
+	{
+		return 1;
+	}
+	//int left=GetKLevelCount(pRoot->pLeft, k - 1);
+	//int right=GetKLevelCount(pRoot->pRight, k - 1);
+	//return left+right;
+	return GetKLevelCount(pRoot->pLeft, k - 1) + GetKLevelCount(pRoot->pRight, k - 1);
+}
+//获取二叉树高度
+int GetHeight(BTNode* pRoot)
+{
+	if (NULL == pRoot)
+	{
+		return 0;
+	}
+	int leftHeight = GetHeight(pRoot->pLeft);
+	int rightHeight = GetHeight(pRoot->pRight);
+	return leftHeight > rightHeight ? leftHeight + 1 : rightHeight + 1;
+}
+//返回X元素在树中所对应的节点
+BTNode* Find(BTNode* pRoot, BTDataType x)
+{
+	BTNode* pNode = NULL;
+	if (NULL == pRoot)
+	{
+		return NULL;
+	}
+	if (pRoot->val == x)
+	{
+		return pRoot;
+	}
+	//Find(pRoot->pLeft, x);
+	//Find(pRoot->pRight, x);
+	if ((pNode = Find(pRoot->pLeft, x)) || (pNode = Find(pRoot->pRight, x)))
+	{
+		return pNode;
+	}
+	return NULL;
+}
+//获取pNode的双亲
+BTNode* GetParent(BTNode* pRoot, BTNode* pNode)
+{
+	BTNode* pParent = NULL;
+	if (NULL == pRoot || NULL == pNode || pNode == pRoot)
+	{
+		return NULL;
+	}
+	if (pRoot->pLeft == pNode || pRoot->pRight == pNode)
+	{
+		return pRoot;
+	}
+	//pParent = GetParent(pRoot->pLeft, pNode);
+	//pParent = GetParent(pRoot->pRight, pNode);
+	//if (NULL != pParent)
+	//{
+	//	return pParent;
+	//}
+	if ((pParent = GetParent(pRoot->pLeft, pNode)) || (pParent = GetParent(pRoot->pRight, pNode)))
+	{
+		return pParent;
+	}
+	return NULL;
+}
+
+//测试函数
+void Test1()
+{
+	BTNode* pRoot=CreatBinTree();
+	
+	cout << "先序遍历为： "; 
+	PreOrder(pRoot);
+	cout << endl;
+
+	cout << "中序遍历为： ";
+	InOrder(pRoot);
+	cout << endl;
+
+	cout << "后序遍历为:  ";
+	PostOrder(pRoot);
+	cout << endl;
+
+	//获取节点个数
+	cout << "节点个数为:  ";
+	cout<<GetNodeCount(pRoot)<<endl;
+	
+	//获取叶子节点
+	cout << "叶子节点数为:";
+	cout<<GetLeafCount(pRoot)<<endl;
+
+	//高度
+	cout << "二叉树高度为:";
+	cout << GetHeight(pRoot)<<endl;
+
+	//第K层节点个数
+	cout << "第3层节点个数为:";
+	cout<<GetKLevelCount(pRoot, 3)<<endl;
+
+	//返回X元素在树中所对应的节点
+	if (Find(pRoot, 3))
+	{
+		cout << "节点找到了!" <<endl;
+	}
+	else
+	{
+		cout << "节点没找到!" << endl;
+	}
+	BTNode* pNode = Find(pRoot, 3);
+	BTNode* pParent = GetParent(pRoot, Find(pRoot, 3));
+	//找双亲
+	if (pParent)
+	{
+		cout << "双亲is "<<pParent->val << endl;
+	}
+	else
+	{
+		cout << "双亲没找到!" << endl;
+	}
 }
 //测试函数
 void Test()
