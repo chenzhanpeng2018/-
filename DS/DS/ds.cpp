@@ -342,11 +342,11 @@ int main()
 #if 0
 //4
 //无头结点单链表基本操作
-#include<stdio.h>
+#include<iostream>
 #include<assert.h>
 #include<malloc.h>
 #include<Windows.h>
-
+using namespace std;
 typedef int DateType;
 
 typedef struct SLNode
@@ -595,6 +595,12 @@ void PrintfSList(SLNode* head)
 	}
 	printf("NULL\n");
 }
+SLNode* reverseList(SLNode* head) {
+	SLNode *p;
+	for (p = NULL; head; swap(head, p))
+		swap(p, head->next);
+	return p;
+}
 
 ////////////////////////////////////////
 //测试函数
@@ -609,6 +615,9 @@ void TestSList1()
 	SLPushBack(&L, 4);
 	SLPushBack(&L, 5);
 	PrintfSList(L);
+
+	//反转链表,原地算法
+	//PrintfSList(reverseList(L));
 	
 	//SLInsertAfter(L, 8);
 	//PrintfSList(L);
@@ -1514,13 +1523,14 @@ int main()
 }
 #endif
 
-#if 1
+#if 0
 //9
 //2020.3.28
 //二叉树的实现与基本操作
 #include<iostream>
 #include<assert.h>
 #include<malloc.h>
+#include<queue>
 using namespace std;
 
 typedef int BTDataType;
@@ -1545,35 +1555,47 @@ BTNode* BuyBinTreeNode(BTDataType val)
 	pNewNode->val = val;
 	return pNewNode;
 }
-BTNode* CreatBinTree()
-{
-	//            1
-	//          /   \ 
-	//         2     4
-	//       /     /   \
-	//      3     5     6
-	BTNode* node1 = BuyBinTreeNode(1);
-	BTNode* node2 = BuyBinTreeNode(2);
-	BTNode* node3 = BuyBinTreeNode(3);
-	BTNode* node4 = BuyBinTreeNode(4);
-	BTNode* node5 = BuyBinTreeNode(5);
-	BTNode* node6 = BuyBinTreeNode(6);
+//BTNode* CreatBinTree()
+//{
+//	//            1
+//	//          /   \ 
+//	//         2     4
+//	//       /     /   \
+//	//      3     5     6
+//	BTNode* node1 = BuyBinTreeNode(1);
+//	BTNode* node2 = BuyBinTreeNode(2);
+//	BTNode* node3 = BuyBinTreeNode(3);
+//	BTNode* node4 = BuyBinTreeNode(4);
+//	BTNode* node5 = BuyBinTreeNode(5);
+//	BTNode* node6 = BuyBinTreeNode(6);
+//	//BTNode* node7 = BuyBinTreeNode(7);
+//	//BTNode* node8 = BuyBinTreeNode(8);
+//	//BTNode* node9 = BuyBinTreeNode(9);
+//
+//	BTNode* pRoot = node1;
+//	node1->pLeft = node2;
+//	node2->pLeft = node3;
+//	node1->pRight = node4;
+//	node4->pLeft = node5;
+//	node4->pRight = node6;
+//	//node3->pRight = node7;
+//	//node5->pRight = node8;
+//	//node8->pRight = node9;
+//	return pRoot;
+//
+//}
 
-	BTNode* pRoot = node1;
-	node1->pLeft = node2;
-	node2->pLeft = node3;
-	node1->pRight = node4;
-	node4->pLeft = node5;
-	node4->pRight = node6;
-	return pRoot;
 
-}
 //前序遍历
 void PreOrder(BTNode* pRoot);
 //中序遍历
 void InOrder(BTNode* pRoot);
 //后序遍历
 void PostOrder(BTNode* pRoot);
+//层序遍历
+void LevelOrder(BTNode *pRoot);
+//判断是否为完全二叉树
+bool isCBT(BTNode* pRoot);
 //获取二叉树中节点个数
 int GetNodeCount(BTNode* pRoot);
 //获取叶子节点个数
@@ -1586,6 +1608,43 @@ int GetHeight();
 BTNode* Find(BTNode* pRoot, BTDataType x);
 //获取pNode的双亲
 BTNode* FindParent(BTNode* pRoot, BTNode* pNode);
+//二叉树的销毁
+void TreeDestroy(BTNode** pRoot);
+//构建二叉树   invalid:NULL节点的标记符号
+BTNode* CreateBinTree(int * array, int size, int index, BTDataType invalid);
+
+
+
+
+
+
+
+
+
+//构建二叉树   invalid:NULL节点标记
+BTNode* _CreateBinTree(int * array, int size, int* index, BTDataType invalid)
+{
+	BTNode* pRoot = NULL;
+	if (*index < size&&array[*index] != invalid)
+	{
+		//创建根节点
+		pRoot = BuyBinTreeNode(array[*index]);
+
+		//创建根节点的左子树
+		++(*index);
+		pRoot->pLeft = _CreateBinTree(array, size, index, invalid);
+
+		//递归创建根节点的右子树
+		++(*index);
+		pRoot->pRight = _CreateBinTree(array, size, index, invalid);
+	}
+	return pRoot;
+}
+BTNode* CreateBinTree(int * array, int size, BTDataType invalid)
+{
+	int index = 0;
+	return _CreateBinTree(array, size, &index, invalid);
+}
 
 //先序遍历
 void PreOrder(BTNode* pRoot)
@@ -1618,18 +1677,67 @@ void PostOrder(BTNode* pRoot)
 
 	}
 }
+//层序遍历
+void LevelOrder(BTNode *pRoot)
+{
+	queue<BTNode*> q;
+	if (pRoot == NULL)
+	{
+		return;
+	}
+	q.push(pRoot);
+
+	while (!q.empty())
+	{
+		BTNode* front = q.front();
+		q.pop();
+
+		if (front->pLeft) q.push(front->pLeft);
+		if (front->pRight) q.push(front->pRight);
+		cout<<front->val<<" ";
+	}
+}
+
+//判断是否为完全二叉树
+bool isCBT(BTNode* pRoot)//判断以pRoot为头节点的二叉树是否为完全二叉树
+{
+	assert(pRoot);
+	if (pRoot == NULL)
+		return true;
+	
+	queue < BTNode* >q;//通过队列q实现二叉树的层次遍历，通过层次遍历来判断是否为完全二叉树
+	q.push(pRoot);//加入头节点
+	
+	bool leaf = false;//leaf变量用来标记一个状态是否发生（只要当前节点的左孩子和右孩子都为空或者左孩子不为空，右孩子为空时，这个状态就发生，
+	                  //只要发生了这个状态，以后访问到的节点必须都是叶节点）
+	
+	while (!q.empty())
+	{
+		BTNode* p = q.front();
+		q.pop();
+		if ((leaf && (p->pLeft != NULL || p->pRight != NULL)) || (p->pLeft == NULL&&p->pRight != NULL))//这些判断条件是所有的不满足是完全二叉树的条件。条件一（第二个||前面的条件）：上述的状态已经发生，但是当前访问到的节点不是叶节点（有左孩子或者右孩子）。条件二：当前节点有右孩子，没有左孩子
+			return false;
+		if (p->pLeft != NULL)//左孩子不为空，加入到队列中去
+			q.push(p->pLeft);
+		if (p->pRight != NULL)//右孩子不为空，加入到队列中去
+			q.push(p->pRight);
+		if ((p->pLeft != NULL&&p->pRight == NULL) || (p->pLeft == NULL&&p->pRight == NULL))//这个if语句就是判断状态是否要发生
+			leaf = true;
+	}
+	return true;
+}
 //获取二叉树中节点个数
-//int NodeCount=0;
+//int count=0;
 //int GetNodeCount(BTNode* pRoot)
 //{   
 //	
 //	if (pRoot)
 //	{
-//		NodeCount++;
+//		::count++;
 //		GetNodeCount(pRoot->pLeft);
 //		GetNodeCount(pRoot->pRight);
 //	}
-//	return NodeCount;
+//	return ::count;
 //}
 int GetNodeCount(BTNode* pRoot)
 {
@@ -1724,11 +1832,33 @@ BTNode* GetParent(BTNode* pRoot, BTNode* pNode)
 	}
 	return NULL;
 }
+//二叉树的销毁
+void DestroyNode(BTNode* node)
+{
+     free(node);
+     return;
+ }
+
+void TreeDestroy(BTNode** pRoot)
+ {
+	assert(pRoot);
+	if (*pRoot == NULL)
+	{
+		//空树
+		return;
+    }
+	TreeDestroy(&((*pRoot)->pLeft));
+	TreeDestroy(&((*pRoot)->pRight));
+	DestroyNode(*pRoot);
+	*pRoot = NULL;
+	return;
+ }
 
 //测试函数
 void Test1()
 {
-	BTNode* pRoot=CreatBinTree();
+	int array[] = { 1, 2, 3, -1, -1, -1, 4, 5, -1, -1, 6 };
+	BTNode* pRoot = CreateBinTree(array, sizeof(array) / sizeof(array[0]), -1);
 	
 	cout << "先序遍历为： "; 
 	PreOrder(pRoot);
@@ -1741,6 +1871,20 @@ void Test1()
 	cout << "后序遍历为:  ";
 	PostOrder(pRoot);
 	cout << endl;
+
+	cout << "层序遍历为:  ";
+	LevelOrder(pRoot);
+	cout << endl;
+
+	//判断是否为完全二叉树
+	if (isCBT(pRoot))//判断以pRoot为头节点的二叉树是否为完全二叉树
+	{
+		cout << "is CBT" << endl;
+	}
+	else
+	{
+		cout << "no is CBT" << endl;
+	}
 
 	//获取节点个数
 	cout << "节点个数为:  ";
@@ -1778,6 +1922,608 @@ void Test1()
 	{
 		cout << "双亲没找到!" << endl;
 	}
+	//销毁
+	TreeDestroy(&pRoot);
+}
+//测试函数
+void Test()
+{
+	Test1();
+}
+int main()
+{
+	Test();
+	system("pause");
+	return 0;
+}
+#endif
+
+#if 0
+//10
+//2020.4.1
+//排序
+#include<iostream>
+#include<assert.h>
+#include<malloc.h>
+#include<queue>
+#include<stack>
+using namespace std;
+
+// 插入排序
+void InsertSort(int* a, int n);
+// 希尔排序
+void ShellSort(int* a, int n);
+// 选择排序
+void SelectSort(int* a, int n);
+// 堆排序
+void AdjustDown(int* a, int n, int root);
+void HeapSort(int* a, int n);
+// 冒泡排序
+void BubbleSort(int* a, int n);
+// 快速排序递归实现
+// 快速排序hoare版本
+int PartSort1(int* a, int left, int right);
+// 快速排序挖坑法
+int PartSort2(int* a, int left, int right);
+// 快速排序前后指针法
+int PartSort3(int* a, int left, int right);
+void QuickSort(int* a, int left, int right);
+// 快速排序 非递归实现
+void QuickSortNonR(int* a, int size);
+// 归并排序递归实现
+void MergeSort(int* a, int n);
+// 归并排序非递归实现
+void MergeSortNonR(int* a, int n);
+// 计数排序
+void CountSort(int* a, int n);
+
+
+
+
+
+//void Swap(int* a, int* b)
+//{
+//	int temp=*a;
+//	*a = *b;
+//	*b = temp;
+//}
+
+
+//1.插入排序
+//应用场景:数据量小,接近有序。
+//1.1直接插入排序
+//时间复杂度:O(n^2)
+//空间复杂度:O(1)
+void InsertSort(int* array, int size)
+{
+	for (int i = 1; i < size; i++)
+	{
+		int key = array[i];
+		int end = i - 1;
+		//找位置
+		while (end >= 0 && key < array[end])
+		{
+			array[end + 1] = array[end];
+			end--;
+		}
+		//插入数据
+		array[end + 1] = key;
+	}
+}
+//1.2希尔排序 
+//当数据量大,且杂乱
+//先按照某一步长分组，组内进行插入排序，折半减少步长，直至为1
+//故三层循环 最外层为步长。
+//时间复杂度:O(N^1.3-N^2）
+//空间复杂度:O(1)
+void ShellSort(int* array, int size)
+{
+	int gap = size;
+	while (gap > 1)
+	{
+		gap = gap / 3 + 1;
+		for (int i = gap; i < size; i++)
+		{
+			int key = array[i];
+			int end = i - gap;
+			//找位置
+			while (end >= 0 && key < array[end])
+			{
+				array[end + gap] = array[end];
+				end-=gap;
+			}
+			//插入数据
+			array[end + gap] = key;
+		}
+	}
+}
+//2.选择排序
+//2.1选择排序
+//时间复杂度:O(N^2)
+//空间复杂度:O(1)
+void SelectSort(int* array, int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		int minPos = i;
+		for (int j = i ; j < size; j++)
+		{
+			if (array[j] < array[minPos])
+			{
+				minPos = j;
+			}
+		}
+		swap(array[i], array[minPos]);
+	}
+}
+//2.2堆排序
+//升序建大堆，降序建小堆
+//时间复杂度:O(NlogN)
+//空间复杂度:O(1)
+//小堆
+void HeapSort(int* array, int size)
+{
+	//建堆
+	//从第一个非叶子节点开始倒退调整
+	for (int root = (size - 2) >> 1; root >= 0; root--)
+	{
+		AdjustDown(array, size, root);
+	}
+	//采用堆删除的思想来进行排序
+	int end = size - 1;
+	while (end)
+	{
+		int temp = array[0];
+		array[0] = array[end];
+		array[end] = temp;
+
+		AdjustDown(array, end, 0);
+		end--;
+	}
+}
+void AdjustDown(int* array, int size, int parent)
+{
+	//小堆，降序，向下调整
+	int child = parent * 2 + 1;
+	while (child < size)
+	{
+		if (child + 1 < size&&array[child + 1] < array[child])
+		{
+			child++;
+		}
+		if (array[child] < array[parent])
+		{
+			int temp = array[child];
+			array[child] = array[parent];
+			array[parent] = temp;
+
+			parent = child;
+			child = parent * 2 + 1;
+		}
+		else
+		{
+			return;
+		}
+	}
+}
+//3.交换排序
+//3.1冒泡排序
+//时间复杂度:O(n^2)
+//空间复杂度:O(1)
+//升序
+void BubbleSort(int* array, int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+        int flag = 1;
+		for (int j = 0; j < size - 1 - i; j++)
+		{
+			if (array[j]>array[j+1])
+			{
+				swap(array[j], array[j+1]);
+				flag = 0;
+			}
+		}
+		if (flag) break;
+	}
+}
+//3.2快速排序
+//时间复杂度:O(N*logN)
+//时间复杂度:O(logN)--O(N)
+//不稳定排序
+//快速排序递归实现
+//快速排序hoare版本(前后交换)
+int GetIndexOfMid(int* array, int left, int right)
+{
+	int a = array[left];
+	int b = array[(left + right) / 2];
+	int c = array[right];
+	if (a > b)
+	{
+		if (b > c)
+		{
+			return (left + right) / 2;
+		}
+		if (a<c)
+		{
+			return left;
+		}
+		else
+		{
+			return right;
+		}
+	}
+	if (a<b)
+	{
+		if (a > c)
+		{
+			return left;
+		}
+		if (b<c)
+		{
+			return (left + right) / 2;
+		}
+		else
+		{
+			return right;
+		}
+	}
+	return 0;
+	//return a > b ? (b > c ? b : a < c ? a : c) : (a > c ? a : b < c ? b : c);
+}
+int PartSort1(int* array, int left, int right)
+{
+	int begin = left;
+	int end = right - 1;
+	int key = array[end];
+
+	while (begin < end)
+	{
+		//让begin从前往后找，找比基准值大的元素，找到之后停止
+		while (begin<end&&array[begin] <= key)
+			begin++;
+		//让end从后往前找，找到比基准值小的元素，找到之后停止
+		while (begin<end&&array[end] >= key)
+			end--;
+
+		if (begin < end)
+		{
+			swap(array[begin], array[end]);
+		}
+	}
+	
+	if (begin!=right-1)
+	swap(array[begin], array[right-1]);
+	
+	return begin; //新div
+}
+// 快速排序挖坑法
+int PartSort2(int* array, int left, int right)
+{
+	int begin = left;
+	int end = right - 1;
+	int key = array[begin]; //array[begin]就是第一个坑
+
+	while (begin < end)
+	{
+		// 从右向左找小于key的数来填array[begin]
+		while (begin < end && array[end] >= key)
+			end--;
+		if (begin < end)
+		{
+			array[begin] = array[end]; //将array[end]填到array[begin]中，array[end]就形成了一个新的坑
+			begin++;
+		}
+
+		// 从左向右找大于或等于key的数来填array[end]
+		while (begin < end && array[begin] <= key)
+			begin++;
+		if (begin < end)
+		{
+			array[end] = array[begin]; //将array[begin]填到array[end]中，array[begin]就形成了一个新的坑
+			end--;
+		}
+	}
+	//退出时，begin等于end,将key填到这个坑中。
+	array[begin] = key;
+
+	return begin;//返回新的div
+}
+// 快速排序前后指针法
+int PartSort3(int* array, int left, int right)
+{
+	int cur = 0;
+	int prev = cur - 1;
+	int key;
+	int mid = GetIndexOfMid(array, left, right); //取前中后三数中间值最为基准值，避免时间复杂度过高
+	swap(array[mid], array[right - 1]);
+	key = array[right - 1];
+
+	while (cur < right)
+	{
+		if (array[cur] < key&&++prev != cur)
+		{
+			swap(array[prev], array[cur]);
+		}
+		cur++;
+	}
+	swap(array[++prev], array[right - 1]);
+	return prev;
+}
+
+void QuickSort(int* array, int left, int right)
+{
+	//左闭右开
+	//如果有元素（递归出口）
+	if (right - left < 5)
+	{
+		InsertSort(array + left, right - left);
+	}
+	else
+	{
+		int div = PartSort3(array, left, right);
+		QuickSort(array, left, div);
+		QuickSort(array, div + 1, right);
+	}
+}
+// 快速排序 非递归实现
+void QuickSortNonR(int* a, int left, int right)
+{
+	stack<int> s;
+	if (left < right)
+	{
+		s.push(left);
+		s.push(right);
+	}
+	while (!s.empty())
+	{
+		int right = s.top();
+		s.pop();
+		int left = s.top();
+		s.pop();
+
+
+		int div = PartSort1(a, left, right);	
+		if (left < div - 1)
+	    {
+		   s.push(left);
+		   s.push(div - 1);
+		}
+		if (div + 1<right)
+		{
+		  s.push(div + 1);
+		  s.push(right);
+		}
+
+		/*if (left < right)
+		{
+			int div = PartSort1(a, left, right);
+			s.push(right);
+			s.push(div + 1);
+			s.push(div - 1);
+			s.push(left);
+		}*/
+	}
+}
+void QuickSortNonR1(int* a, int size)
+{
+	stack<int> s;
+	s.push(size);
+	s.push(0);
+	while (!s.empty())
+	{
+		int left = s.top();
+		s.pop();
+		int right = s.top();
+		s.pop();
+
+		if (right - left > 1)
+		{
+
+			int div = PartSort1(a, left, right);
+			//div是基准值的位置
+			//左半部：[left,div)
+			//右半部：[div+1,right)
+			//先放右，再放左
+			s.push(right);
+			s.push(div + 1);
+
+			s.push(div);
+			s.push(left);
+		}
+	}
+}
+//4.归并排序
+//归并排序递归实现
+//时间复杂度:O(NlogN)
+//空间复杂度:O(N)
+//稳定排序
+void MergeData(int* array, int left, int mid, int right,int* temp)
+{
+	//左闭右开
+	int begin1 = left, end1 = mid;
+	int begin2 = mid, end2 = right;
+	int index = left;
+
+	while (begin1 < end1&&begin2 < end2)
+	{
+		if (array[begin1] <= array[begin2])
+		{
+			temp[index++] = array[begin1++];
+		}
+		else
+			temp[index++] = array[begin2++];
+	}
+	while (begin1<end1)
+		temp[index++] = array[begin1++];
+	while (begin2<end2)
+		temp[index++] = array[begin2++];
+}
+void _MergeSort(int* array, int left, int right, int* temp)
+{
+	if (right - left > 1)
+	{
+		int mid = left + ((right - left) >> 1);
+		_MergeSort(array, left, mid, temp);
+		_MergeSort(array, mid, right, temp);
+		MergeData(array, left, mid, right, temp);//归并
+		//把临时空间temp拷贝到原空间array中去
+		memcpy(array + left, temp + left, (right - left)*sizeof(array[0]));
+	}
+}
+void MergeSort(int* array, int size)
+{
+	int* temp = (int*)malloc(sizeof(array[0])*size);
+	if (NULL == temp)
+	{
+		assert(0);
+		return ;
+	}
+	_MergeSort(array, 0, size, temp);
+	free(temp);
+}
+//归并排序非递归实现
+void MergeSortNonR(int* array, int size)
+{
+	int gap = 1;
+	int* temp = (int*)malloc(sizeof(array[0])*size);
+	if (NULL == temp)
+	{
+		assert(0);
+		return;
+	}
+	while (gap < size)
+	{
+		for (int i = 0; i < size; i += 2 * gap)
+		{
+			int left = i;
+			int mid = left + gap;
+			int right = mid + gap;
+			//防止越界
+			if (mid > size)
+			{
+				mid = size;
+			}
+			if (right > size)
+			{
+				right = size;
+			}
+			//归并
+			MergeData(array, left, mid, right, temp);
+		}
+		memcpy(array, temp, size*sizeof(array[0]));
+		gap <<= 1;
+	}
+	free(temp);
+}
+//计数排序
+void CountSort(int* array, int size)
+{
+	//1.统计数据范围----并不是必须的，（如果用户告诉范围了，就不需要统计了）
+	int minValue = array[0];
+	int maxValue = array[0];
+	for (int i = 0; i < size; i++)
+	{
+		if (array[i] < minValue)
+			minValue = array[i];
+		if (array[i] > maxValue)
+			maxValue = array[i];
+	}
+	//不同种类元素个数
+	int range = maxValue - minValue + 1;
+	//2.申请空间
+	int* ArrayCount = (int*)malloc(range*sizeof(int));
+	if (NULL == ArrayCount)
+	{
+		assert(0);
+		return;
+	}
+	memset(ArrayCount, 0, range*sizeof(int));
+    //3.统计没个元素出现的次数
+	for (int i = 0; i < size; i++)
+	{
+		ArrayCount[array[i] - minValue]++;
+	}
+	//4.对数据进行回收
+	int index = 0;
+	for (int i = 0; i < size; i++)
+	{
+		while (ArrayCount[i])
+		{
+			array[index++] = i + minValue;
+			ArrayCount[i]--;
+		}
+	}
+	free(ArrayCount);
+}
+//打印函数
+void Printf(int *array, int size)
+{
+	for (int i = 0; i < size; i++)
+	{
+		printf("%d ", array[i]);
+	}
+	cout << endl;
+}
+
+void Swap1(int &a, int &b)
+{
+	int c;
+	c = a;
+	a = b; 
+	b = c;
+}
+//测试函数
+void Test1()
+{
+	int array[] = { 3, 6, 9, 4, 2, 8, 7, 10, 1, 5 };
+	
+	//InsertSort(array, sizeof(array) / sizeof(array[0]));
+	//cout << "直接插入排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+	
+
+	//ShellSort(array, sizeof(array) / sizeof(array[0]));
+	//cout << "希尔排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+
+	//int a = 6, b = 7;
+	//Swap1(a, b);
+	//cout << a << b << endl;
+
+	//SelectSort(array, sizeof(array) / sizeof(array[0]));
+	//cout << "选择排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//HeapSort(array, sizeof(array)/sizeof(array[0]));
+	//cout << "堆排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//BubbleSort(array, sizeof(array) / sizeof(array[0]));
+	//cout << "冒泡排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//QuickSort(array, 0, sizeof(array) / sizeof(array[0]));
+	//cout << "快速排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//QuickSortNonR1(array,sizeof(array) / sizeof(array[0]));
+	//cout << "快速排序非递归: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//MergeSort(array, sizeof(array) / sizeof(array[0]));
+	//cout << "归并排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//MergeSortNonR(array, sizeof(array) / sizeof(array[0]));
+	//cout << "归并排序非递归: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
+	//CountSort(array, sizeof(array) / sizeof(array[0]));
+	//cout << "计数排序: ";
+	//Printf(array, sizeof(array) / sizeof(array[0]));
+
 }
 //测试函数
 void Test()
